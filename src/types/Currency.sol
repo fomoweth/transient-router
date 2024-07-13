@@ -52,7 +52,7 @@ library CurrencyLibrary {
 
 	function approve(Currency currency, address spender, uint256 value) internal {
 		assembly ("memory-safe") {
-			if iszero(eq(currency, NATIVE_ADDRESS)) {
+			if xor(currency, NATIVE_ADDRESS) {
 				let ptr := mload(0x40)
 
 				mstore(ptr, 0x095ea7b300000000000000000000000000000000000000000000000000000000)
@@ -74,7 +74,7 @@ library CurrencyLibrary {
 
 	function forceApprove(Currency currency, address spender, uint256 value) internal {
 		assembly ("memory-safe") {
-			if iszero(eq(currency, NATIVE_ADDRESS)) {
+			if and(iszero(iszero(value)), xor(currency, NATIVE_ADDRESS)) {
 				let ptr := mload(0x40)
 
 				mstore(ptr, 0x095ea7b300000000000000000000000000000000000000000000000000000000)
@@ -164,11 +164,7 @@ library CurrencyLibrary {
 		}
 	}
 
-	function allowance(
-		Currency currency,
-		address owner,
-		address spender
-	) internal view returns (uint256 value) {
+	function allowance(Currency currency, address owner, address spender) internal view returns (uint256 value) {
 		assembly ("memory-safe") {
 			switch eq(currency, NATIVE_ADDRESS)
 			case 0x00 {
@@ -178,10 +174,12 @@ library CurrencyLibrary {
 				mstore(add(ptr, 0x04), owner)
 				mstore(add(ptr, 0x24), spender)
 
-				value := mul(
-					mload(0x00),
-					and(gt(returndatasize(), 0x1f), staticcall(gas(), currency, ptr, 0x44, 0x00, 0x20))
-				)
+				if iszero(staticcall(gas(), currency, ptr, 0x44, 0x00, 0x20)) {
+					returndatacopy(ptr, 0x00, returndatasize())
+					revert(ptr, returndatasize())
+				}
+
+				value := mload(0x00)
 			}
 			default {
 				value := not(0x00)
@@ -198,10 +196,12 @@ library CurrencyLibrary {
 				mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
 				mstore(add(ptr, 0x04), account)
 
-				value := mul(
-					mload(0x00),
-					and(gt(returndatasize(), 0x1f), staticcall(gas(), currency, ptr, 0x24, 0x00, 0x20))
-				)
+				if iszero(staticcall(gas(), currency, ptr, 0x24, 0x00, 0x20)) {
+					returndatacopy(ptr, 0x00, returndatasize())
+					revert(ptr, returndatasize())
+				}
+
+				value := mload(0x00)
 			}
 			default {
 				value := balance(account)
@@ -218,10 +218,12 @@ library CurrencyLibrary {
 				mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
 				mstore(add(ptr, 0x04), address())
 
-				value := mul(
-					mload(0x00),
-					and(gt(returndatasize(), 0x1f), staticcall(gas(), currency, ptr, 0x24, 0x00, 0x20))
-				)
+				if iszero(staticcall(gas(), currency, ptr, 0x24, 0x00, 0x20)) {
+					returndatacopy(ptr, 0x00, returndatasize())
+					revert(ptr, returndatasize())
+				}
+
+				value := mload(0x00)
 			}
 			default {
 				// 'selfbalance()' is cheaper than 'balance(address())'
@@ -238,10 +240,12 @@ library CurrencyLibrary {
 
 				mstore(ptr, 0x313ce56700000000000000000000000000000000000000000000000000000000)
 
-				value := mul(
-					mload(0x00),
-					and(gt(returndatasize(), 0x1f), staticcall(gas(), currency, ptr, 0x04, 0x00, 0x20))
-				)
+				if iszero(staticcall(gas(), currency, ptr, 0x04, 0x00, 0x20)) {
+					returndatacopy(ptr, 0x00, returndatasize())
+					revert(ptr, returndatasize())
+				}
+
+				value := mload(0x00)
 			}
 			default {
 				value := 18
@@ -260,10 +264,12 @@ library CurrencyLibrary {
 
 			mstore(ptr, 0x18160ddd00000000000000000000000000000000000000000000000000000000)
 
-			value := mul(
-				mload(0x00),
-				and(gt(returndatasize(), 0x1f), staticcall(gas(), currency, ptr, 0x04, 0x00, 0x20))
-			)
+			if iszero(staticcall(gas(), currency, ptr, 0x04, 0x00, 0x20)) {
+				returndatacopy(ptr, 0x00, returndatasize())
+				revert(ptr, returndatasize())
+			}
+
+			value := mload(0x00)
 		}
 	}
 

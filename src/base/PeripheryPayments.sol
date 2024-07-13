@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
+import {IPeripheryPayments} from "src/interfaces/IPeripheryPayments.sol";
 import {Math} from "src/libraries/Math.sol";
 import {Currency} from "src/types/Currency.sol";
 import {PeripheryImmutableState} from "./PeripheryImmutableState.sol";
@@ -9,7 +10,7 @@ import {PeripheryValidation} from "./PeripheryValidation.sol";
 /// @title PeripheryPayments
 /// @dev Modified from https://github.com/Uniswap/v3-periphery/blob/main/contracts/base/PeripheryPayments.sol
 
-abstract contract PeripheryPayments is PeripheryImmutableState, PeripheryValidation {
+abstract contract PeripheryPayments is IPeripheryPayments, PeripheryImmutableState, PeripheryValidation {
 	using Math for uint256;
 
 	receive() external payable virtual {
