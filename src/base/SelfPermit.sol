@@ -43,9 +43,7 @@ abstract contract SelfPermit is ISelfPermit {
 		bytes32 r,
 		bytes32 s
 	) external payable {
-		if (currency.allowance(msg.sender, address(this)) < value) {
-			selfPermit(currency, value, deadline, v, r, s);
-		}
+		if (shouldPermit(currency, value)) selfPermit(currency, value, deadline, v, r, s);
 	}
 
 	function selfPermitAllowed(
@@ -84,8 +82,10 @@ abstract contract SelfPermit is ISelfPermit {
 		bytes32 r,
 		bytes32 s
 	) external payable {
-		if (currency.allowance(msg.sender, address(this)) < type(uint256).max) {
-			selfPermitAllowed(currency, nonce, expiry, v, r, s);
-		}
+		if (shouldPermit(currency, type(uint256).max)) selfPermitAllowed(currency, nonce, expiry, v, r, s);
+	}
+
+	function shouldPermit(Currency currency, uint256 value) internal view virtual returns (bool) {
+		return currency.allowance(msg.sender, address(this)) < value;
 	}
 }
