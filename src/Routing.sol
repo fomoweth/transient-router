@@ -42,10 +42,11 @@ abstract contract Routing is PeripheryPayments {
 
 	bytes4 internal constant INSUFFICIENT_AMOUNT_IN_ERROR = 0xdf5b2ee6; // InsufficientAmountIn()
 	bytes4 internal constant INSUFFICIENT_AMOUNT_OUT_ERROR = 0xe52970aa; // InsufficientAmountOut()
+	bytes4 internal constant INSUFFICIENT_RESERVES_ERROR = 0xbe5222a3; // InsufficientReserves(address)
 
 	bytes4 internal constant INVALID_SWAP_ERROR = 0x11157667; // InvalidSwap()
-	bytes4 internal constant INVALID_SWAP_ACTION_ERROR = 0x28add26d; // InvalidSwapAction(uint8)
 	bytes4 internal constant INVALID_SWAP_TYPE_ERROR = 0x893f2d3b; // InvalidSwapType(uint8)
+	bytes4 internal constant INVALID_PATH_LENGTH_ERROR = 0xcd608bfe; // InvalidPathLength()
 	bytes4 internal constant INVALID_PAYER_ERROR = 0x11157667; // InvalidPayer()
 
 	bytes4 internal constant SLOT_EMPTY_ERROR = 0xce174065; // SlotEmpty()
