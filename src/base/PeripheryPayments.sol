@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import {Reverter} from "src/libraries/Reverter.sol";
-import {Wrapper} from "src/libraries/Wrapper.sol";
+import {Math} from "src/libraries/Math.sol";
 import {Currency} from "src/types/Currency.sol";
 import {PeripheryImmutableState} from "./PeripheryImmutableState.sol";
 import {PeripheryValidation} from "./PeripheryValidation.sol";
@@ -11,41 +10,36 @@ import {PeripheryValidation} from "./PeripheryValidation.sol";
 /// @dev Modified from https://github.com/Uniswap/v3-periphery/blob/main/contracts/base/PeripheryPayments.sol
 
 abstract contract PeripheryPayments is PeripheryImmutableState, PeripheryValidation {
-	using Wrapper for Currency;
+	using Math for uint256;
 
 	receive() external payable virtual {
 		required(msg.sender == Currency.unwrap(WETH9), 0x48f5c3ed); // InvalidCaller()
 	}
 
-	function unwrapWETH9(uint256 amountMin, address recipient) public payable {
-		uint256 balance = WETH9.balanceOfSelf();
-		required(balance >= amountMin, 0x897f6c58, Currency.unwrap(WETH9)); // InsufficientBalance(address)
-
-		if (balance != 0) {
-			WETH9.unwrap(amountMin);
-
-			assembly ("memory-safe") {
-				if iszero(call(gas(), recipient, amountMin, 0x00, 0x00, 0x00, 0x00)) {
-					mstore(0x00, 0xb06a467a) // TransferNativeFailed()
-					revert(0x1c, 0x04)
-				}
-			}
-		}
+	function pull(Currency currency, uint256 value) external payable {
+		required(value != 0, 0x7c946ed7); // ZeroValue()
+		currency.transferFrom(msg.sender, address(this), value);
 	}
 
-	function sweepCurrency(Currency currency, uint256 amountMin, address recipient) public payable {
+	function wrapETH(uint256 value) external payable {
+		wrapNative(WETH9, value.min(selfBalance()));
+	}
+
+	function unwrapWETH(uint256 value) external payable {
+		unwrapNative(WETH9, value.min(WETH9.balanceOfSelf()));
+	}
+
+	function refund(Currency currency) external payable {
 		uint256 balance = currency.balanceOfSelf();
-		required(balance >= amountMin, 0xf4d678b8); // InsufficientBalance()
-
-		if (balance > 0) currency.transfer(recipient, balance);
+		if (balance != 0) currency.transfer(msg.sender, balance);
 	}
 
-	function refundETH() external payable {
-		assembly ("memory-safe") {
-			let value := selfbalance()
+	function refundETH(bool unwrap) external payable {
+		if (unwrap) unwrapNative(WETH9, WETH9.balanceOfSelf());
 
-			if iszero(iszero(value)) {
-				if iszero(call(gas(), caller(), value, 0x00, 0x00, 0x00, 0x00)) {
+		assembly ("memory-safe") {
+			if iszero(iszero(selfbalance())) {
+				if iszero(call(gas(), caller(), selfbalance(), 0x00, 0x00, 0x00, 0x00)) {
 					mstore(0x00, 0xb06a467a) // TransferNativeFailed()
 					revert(0x1c, 0x04)
 				}
@@ -54,22 +48,47 @@ abstract contract PeripheryPayments is PeripheryImmutableState, PeripheryValidat
 	}
 
 	function pay(Currency currency, address payer, address recipient, uint256 value) internal {
-		if (currency == WETH9 && address(this).balance >= value) {
-			WETH9.wrap(value);
-			WETH9.transfer(recipient, value);
-		} else if (payer == address(this)) {
+		if (payer == address(this)) {
 			currency.transfer(recipient, value);
 		} else {
 			currency.transferFrom(payer, recipient, value);
 		}
 	}
 
-	function transferNative(address recipient, uint256 value) internal {
+	function wrapNative(Currency weth, uint256 value) private {
 		assembly ("memory-safe") {
-			if iszero(call(gas(), recipient, value, 0x00, 0x00, 0x00, 0x00)) {
-				mstore(0x00, 0xb06a467a) // TransferNativeFailed()
-				revert(0x1c, 0x04)
+			if iszero(iszero(value)) {
+				let ptr := mload(0x40)
+
+				mstore(ptr, 0xd0e30db000000000000000000000000000000000000000000000000000000000)
+
+				if iszero(call(gas(), weth, value, ptr, 0x04, 0x00, 0x00)) {
+					returndatacopy(ptr, 0x00, returndatasize())
+					revert(ptr, returndatasize())
+				}
 			}
+		}
+	}
+
+	function unwrapNative(Currency weth, uint256 value) private {
+		assembly ("memory-safe") {
+			if iszero(iszero(value)) {
+				let ptr := mload(0x40)
+
+				mstore(ptr, 0x2e1a7d4d00000000000000000000000000000000000000000000000000000000)
+				mstore(add(ptr, 0x04), value)
+
+				if iszero(call(gas(), weth, 0x00, ptr, 0x24, 0x00, 0x00)) {
+					returndatacopy(ptr, 0x00, returndatasize())
+					revert(ptr, returndatasize())
+				}
+			}
+		}
+	}
+
+	function selfBalance() private view returns (uint256 value) {
+		assembly ("memory-safe") {
+			value := selfbalance()
 		}
 	}
 }

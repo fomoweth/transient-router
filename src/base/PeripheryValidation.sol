@@ -1,40 +1,54 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import {Reverter} from "src/libraries/Reverter.sol";
-
 /// @title PeripheryValidation
-/// @dev Modified from https://github.com/Uniswap/v3-periphery/blob/main/contracts/base/PeripheryValidation.sol
+/// @notice Provides functions for reverting with a custom exception and value
 
 abstract contract PeripheryValidation {
-	modifier checkDeadline(uint256 deadline) {
-		_checkDeadline(deadline);
-		_;
+	function required(bool condition, bytes4 exception, address value) internal pure {
+		if (!condition) revertWith(exception, value);
 	}
 
-	function _checkDeadline(uint256 deadline) private view {
-		required(_blockTimestamp() <= deadline, 0x1ab7da6b); // DeadlineExpired()
+	function required(bool condition, bytes4 exception, bytes32 value) internal pure {
+		if (!condition) revertWith(exception, value);
 	}
 
-	function _blockTimestamp() internal view returns (uint48 bts) {
+	function required(bool condition, bytes4 exception, uint256 value) internal pure {
+		if (!condition) revertWith(exception, value);
+	}
+
+	function required(bool condition, bytes4 exception) internal pure {
+		if (!condition) revertWith(exception);
+	}
+
+	function revertWith(bytes4 exception, address value) internal pure {
 		assembly ("memory-safe") {
-			bts := timestamp()
+			mstore(0x00, exception)
+			mstore(0x04, value)
+			revert(0x1c, 0x24)
 		}
 	}
 
-	function required(bool condition, bytes4 exception, address value) internal pure virtual {
-		if (!condition) Reverter.revertWith(exception, value);
+	function revertWith(bytes4 exception, bytes32 value) internal pure {
+		assembly ("memory-safe") {
+			mstore(0x00, exception)
+			mstore(0x04, value)
+			revert(0x1c, 0x24)
+		}
 	}
 
-	function required(bool condition, bytes4 exception, bytes32 value) internal pure virtual {
-		if (!condition) Reverter.revertWith(exception, value);
+	function revertWith(bytes4 exception, uint256 value) internal pure {
+		assembly ("memory-safe") {
+			mstore(0x00, exception)
+			mstore(0x04, value)
+			revert(0x1c, 0x24)
+		}
 	}
 
-	function required(bool condition, bytes4 exception, uint256 value) internal pure virtual {
-		if (!condition) Reverter.revertWith(exception, value);
-	}
-
-	function required(bool condition, bytes4 exception) internal pure virtual {
-		if (!condition) Reverter.revertWith(exception);
+	function revertWith(bytes4 exception) internal pure {
+		assembly ("memory-safe") {
+			mstore(0x00, exception)
+			revert(0x1c, 0x04)
+		}
 	}
 }
