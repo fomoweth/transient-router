@@ -8,7 +8,7 @@ import {Currency} from "src/types/Currency.sol";
 
 library PoolAddress {
 	function computePoolAddress(
-		address factory,
+		address v3Factory,
 		bytes32 initCodeHash,
 		Currency currency0,
 		Currency currency1,
@@ -27,7 +27,7 @@ library PoolAddress {
 			mstore(add(ptr, 0x35), currency1)
 			mstore(add(ptr, 0x55), fee)
 
-			mstore(ptr, add(hex"ff", shl(0x58, factory)))
+			mstore(ptr, add(hex"ff", shl(0x58, v3Factory)))
 			mstore(add(ptr, 0x15), keccak256(add(ptr, 0x15), 0x60))
 			mstore(add(ptr, 0x35), initCodeHash)
 

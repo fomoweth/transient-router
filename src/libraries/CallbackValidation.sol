@@ -6,23 +6,23 @@ pragma solidity ^0.8.25;
 
 library CallbackValidation {
 	// bytes32(uint256(keccak256("CallbackValidation.storage.slot")) - 1) & ~bytes32(uint256(0xff))
-	bytes32 internal constant SLOT = 0x4302a1faddcb1771bd1bd736333d9902051a213afd1b3163986f4a241b525c00;
+	bytes32 private constant SLOT = 0x4302a1faddcb1771bd1bd736333d9902051a213afd1b3163986f4a241b525c00;
 
 	function setCallback(address expectedCaller, bytes4 expectedSig) internal {
 		assembly ("memory-safe") {
-			// verify the slot is empty
+			// verify that the slot is empty
 			if iszero(iszero(tload(SLOT))) {
 				mstore(0x00, 0x55b9fb08) // SlotNotEmpty()
 				revert(0x1c, 0x04)
 			}
 
-			// verify the expected caller is not zero
+			// verify that the expected caller is not zero
 			if iszero(expectedCaller) {
 				mstore(0x00, 0x48f5c3ed) // InvalidCaller()
 				revert(0x1c, 0x04)
 			}
 
-			// verify the expected signature is not zero
+			// verify that the expected signature is not zero
 			if iszero(expectedSig) {
 				mstore(0x00, 0x8baa579f) // InvalidSignature()
 				revert(0x1c, 0x04)
@@ -45,22 +45,22 @@ library CallbackValidation {
 				}
 			}
 
-			let state := tload(SLOT)
+			let cached := tload(SLOT)
 
-			// verify the slot is not empty
-			if iszero(state) {
+			// verify that the slot is not empty
+			if iszero(cached) {
 				mstore(0x00, 0xce174065) // SlotEmpty()
 				revert(0x1c, 0x04)
 			}
 
-			// verify the caller is equal to the expected caller
-			if xor(caller(), format(state, 0x60, 0x01)) {
+			// verify that the caller is equal to the expected caller
+			if xor(caller(), format(cached, 0x60, 0x01)) {
 				mstore(0x00, 0x48f5c3ed) // InvalidCaller()
 				revert(0x1c, 0x04)
 			}
 
-			// verify the signature is equal to the expected signature
-			if xor(format(calldataload(0x00), 0xe0, 0x00), format(state, 0xe0, 0x00)) {
+			// verify that the signature is equal to the expected signature
+			if xor(format(calldataload(0x00), 0xe0, 0x00), format(cached, 0xe0, 0x00)) {
 				mstore(0x00, 0x8baa579f) // InvalidSignature()
 				revert(0x1c, 0x04)
 			}
