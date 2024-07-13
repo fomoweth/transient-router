@@ -2,7 +2,7 @@
 pragma solidity ^0.8.25;
 
 /// @title PoolActions
-/// @notice Provides functions for invoking Uniswap V2 & V3 pool actions
+/// @notice Provides functions to perform swap on Uniswap V2 & V3 pools
 
 library PoolActions {
 	function swap(

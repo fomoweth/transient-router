@@ -7,9 +7,9 @@ import {Currency} from "src/types/Currency.sol";
 /// @notice Provides functions for deriving a pool/pair address from its factory and salt
 
 library PoolAddress {
-	function computePoolAddress(
+	function compute(
 		address v3Factory,
-		bytes32 initCodeHash,
+		bytes32 poolInitCodeHash,
 		Currency currency0,
 		Currency currency1,
 		uint24 fee
@@ -29,7 +29,7 @@ library PoolAddress {
 
 			mstore(ptr, add(hex"ff", shl(0x58, v3Factory)))
 			mstore(add(ptr, 0x15), keccak256(add(ptr, 0x15), 0x60))
-			mstore(add(ptr, 0x35), initCodeHash)
+			mstore(add(ptr, 0x35), poolInitCodeHash)
 
 			pool := and(keccak256(ptr, 0x55), 0xffffffffffffffffffffffffffffffffffffffff)
 
@@ -42,9 +42,9 @@ library PoolAddress {
 		}
 	}
 
-	function computePairAddress(
+	function compute(
 		address v2Factory,
-		bytes32 initCodeHash,
+		bytes32 pairInitCodeHash,
 		Currency currency0,
 		Currency currency1
 	) internal view returns (address pair) {
@@ -64,7 +64,7 @@ library PoolAddress {
 
 			mstore(ptr, add(hex"ff", shl(0x58, v2Factory)))
 			mstore(add(ptr, 0x15), salt)
-			mstore(add(ptr, 0x35), initCodeHash)
+			mstore(add(ptr, 0x35), pairInitCodeHash)
 
 			pair := and(keccak256(ptr, 0x55), 0xffffffffffffffffffffffffffffffffffffffff)
 
