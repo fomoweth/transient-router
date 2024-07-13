@@ -5,22 +5,18 @@ pragma solidity ^0.8.25;
 /// @notice Provides functions to handle unsigned math operations
 
 library Math {
+	uint256 internal constant WAD = 1e18;
+	uint256 internal constant HALF_WAD = 0.5e18;
+
+	function abs(int256 x) internal pure returns (uint256 z) {
+		assembly ("memory-safe") {
+			z := xor(sar(255, x), add(sar(255, x), x))
+		}
+	}
+
 	function ternary(bool condition, uint256 x, uint256 y) internal pure returns (uint256 z) {
 		assembly ("memory-safe") {
 			z := xor(y, mul(xor(x, y), iszero(iszero(condition))))
-		}
-	}
-
-	function avg(uint256 x, uint256 y) internal pure returns (uint256 z) {
-		assembly ("memory-safe") {
-			z := add(and(x, y), div(xor(x, y), 2))
-		}
-	}
-
-	function bound(uint256 x, uint256 low, uint256 high) internal pure returns (uint256 z) {
-		assembly ("memory-safe") {
-			z := xor(x, mul(xor(x, low), gt(low, x)))
-			z := xor(z, mul(xor(z, high), lt(high, z)))
 		}
 	}
 
@@ -33,6 +29,50 @@ library Math {
 	function min(uint256 x, uint256 y) internal pure returns (uint256 z) {
 		assembly ("memory-safe") {
 			z := xor(x, mul(xor(x, y), lt(y, x)))
+		}
+	}
+
+	function derive(
+		uint256 base,
+		uint256 quote,
+		uint8 baseDecimals,
+		uint8 quoteDecimals,
+		uint8 decimals
+	) internal pure returns (uint256 derived) {
+		unchecked {
+			if (base != 0 && quote != 0) {
+				derived = mulDiv(
+					scale(base, baseDecimals, decimals),
+					10 ** decimals,
+					scale(quote, quoteDecimals, decimals)
+				);
+			}
+		}
+	}
+
+	function inverse(uint256 answer, uint8 baseDecimals, uint8 quoteDecimals) internal pure returns (uint256 inversed) {
+		assembly ("memory-safe") {
+			if iszero(iszero(answer)) {
+				inversed := div(exp(10, add(baseDecimals, quoteDecimals)), answer)
+			}
+		}
+	}
+
+	function scale(uint256 answer, uint8 baseDecimals, uint8 quoteDecimals) internal pure returns (uint256 scaled) {
+		assembly ("memory-safe") {
+			function ternary(condition, a, b) -> c {
+				c := xor(b, mul(xor(a, b), iszero(iszero(condition))))
+			}
+
+			scaled := ternary(
+				and(iszero(iszero(answer)), xor(baseDecimals, quoteDecimals)),
+				ternary(
+					lt(baseDecimals, quoteDecimals),
+					mul(answer, exp(10, sub(quoteDecimals, baseDecimals))),
+					div(answer, exp(10, sub(baseDecimals, quoteDecimals)))
+				),
+				answer
+			)
 		}
 	}
 
@@ -92,132 +132,23 @@ library Math {
 		}
 	}
 
-	function log2(uint256 x) internal pure returns (uint256 z) {
+	function wadDiv(uint256 x, uint256 y) internal pure returns (uint256 z) {
 		assembly ("memory-safe") {
-			if iszero(x) {
+			if or(iszero(y), iszero(iszero(gt(x, div(sub(not(0), div(y, 2)), WAD))))) {
 				invalid()
 			}
 
-			z := shl(7, lt(0xffffffffffffffffffffffffffffffff, x))
-			z := or(z, shl(6, lt(0xffffffffffffffff, shr(z, x))))
-			z := or(z, shl(5, lt(0xffffffff, shr(z, x))))
-
-			x := shr(z, x)
-			x := or(x, shr(1, x))
-			x := or(x, shr(2, x))
-			x := or(x, shr(4, x))
-			x := or(x, shr(8, x))
-			x := or(x, shr(16, x))
-
-			z := or(
-				z,
-				byte(
-					shr(251, mul(x, shl(224, 0x07c4acdd))),
-					0x0009010a0d15021d0b0e10121619031e080c141c0f111807131b17061a05041f
-				)
-			)
+			z := div(add(mul(x, WAD), div(y, 2)), y)
 		}
 	}
 
-	function log10(uint256 x) internal pure returns (uint256 z) {
+	function wadMul(uint256 x, uint256 y) internal pure returns (uint256 z) {
 		assembly ("memory-safe") {
-			if iszero(lt(x, exp(10, 64))) {
-				x := div(x, exp(10, 64))
-				z := add(z, 64)
+			if iszero(or(iszero(y), iszero(gt(x, div(sub(not(0), HALF_WAD), y))))) {
+				invalid()
 			}
 
-			if iszero(lt(x, exp(10, 32))) {
-				x := div(x, exp(10, 32))
-				z := add(z, 32)
-			}
-
-			if iszero(lt(x, exp(10, 16))) {
-				x := div(x, exp(10, 16))
-				z := add(z, 16)
-			}
-
-			if iszero(lt(x, exp(10, 8))) {
-				x := div(x, exp(10, 8))
-				z := add(z, 8)
-			}
-
-			if iszero(lt(x, exp(10, 4))) {
-				x := div(x, exp(10, 4))
-				z := add(z, 4)
-			}
-
-			if iszero(lt(x, exp(10, 2))) {
-				x := div(x, exp(10, 2))
-				z := add(z, 2)
-			}
-
-			if iszero(lt(x, 10)) {
-				z := add(z, 1)
-			}
-		}
-	}
-
-	function rpow(uint256 x, uint256 y, uint256 b) internal pure returns (uint256 z) {
-		assembly ("memory-safe") {
-			switch x
-			case 0 {
-				z := mul(b, iszero(y))
-			}
-			default {
-				z := xor(b, mul(xor(b, x), and(y, 1)))
-				let half := shr(1, b)
-
-				// prettier-ignore
-				for { y := shr(1, y) } y { y := shr(1, y) } {
-					let xx := mul(x, x)
-					let xxRound := add(xx, half)
-
-					if or(lt(xxRound, xx), shr(128, x)) {
-						mstore(0x00, 0x35278d12) // Overflow()
-						revert(0x1c, 0x04)
-					}
-
-					x := div(xxRound, b)
-
-					if and(y, 1) {
-						let zx := mul(z, x)
-						let zxRound := add(zx, half)
-
-						if or(xor(div(zx, x), z), lt(zxRound, zx)) {
-							if iszero(iszero(x)) {
-								mstore(0x00, 0x35278d12) // Overflow()
-								revert(0x1c, 0x04)
-							}
-						}
-
-						z := div(zxRound, b)
-					}
-				}
-			}
-		}
-	}
-
-	function sqrt(uint256 x) internal pure returns (uint256 z) {
-		assembly ("memory-safe") {
-			z := 181
-
-			let r := shl(7, lt(0xffffffffffffffffffffffffffffffffff, x))
-			r := or(r, shl(6, lt(0xffffffffffffffffff, shr(r, x))))
-			r := or(r, shl(5, lt(0xffffffffff, shr(r, x))))
-			r := or(r, shl(4, lt(0xffffff, shr(r, x))))
-			z := shl(shr(1, r), z)
-
-			z := shr(18, mul(z, add(shr(r, x), 65536)))
-
-			z := shr(1, add(z, div(x, z)))
-			z := shr(1, add(z, div(x, z)))
-			z := shr(1, add(z, div(x, z)))
-			z := shr(1, add(z, div(x, z)))
-			z := shr(1, add(z, div(x, z)))
-			z := shr(1, add(z, div(x, z)))
-			z := shr(1, add(z, div(x, z)))
-
-			z := sub(z, lt(div(x, z), z))
+			z := div(add(mul(x, y), HALF_WAD), WAD)
 		}
 	}
 }
