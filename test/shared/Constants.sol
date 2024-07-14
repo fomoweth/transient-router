@@ -46,6 +46,8 @@ abstract contract Constants {
 	uint24 constant FEE_MEDIUM = 3000;
 	uint24 constant FEE_HIGH = 10000;
 
+	IFeedRegistry constant FEED_REGISTRY = IFeedRegistry(0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf);
+
 	// Denominations
 
 	address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -68,6 +70,4 @@ abstract contract Constants {
 	Currency constant USDC = Currency.wrap(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
 	Currency constant USDT = Currency.wrap(0xdAC17F958D2ee523a2206206994597C13D831ec7);
 	Currency constant WBTC = Currency.wrap(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
-
-	IFeedRegistry constant FEED_REGISTRY = IFeedRegistry(0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf);
 }
