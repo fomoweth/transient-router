@@ -16,10 +16,13 @@ abstract contract Common is Deployer, Assertion, StdCheats {
 	address immutable RECIPIENT = makeAddr("RECIPIENT");
 
 	function fork(bool forkOnBlock) internal {
-		if (!forkOnBlock) {
-			vm.createSelectFork(vm.envString("RPC_ETHEREUM"));
+		uint256 forkBlock;
+		if (forkOnBlock) forkBlock = vm.envOr("FORK_BLOCK_ETHEREUM", forkBlock);
+
+		if (forkBlock != 0) {
+			vm.createSelectFork(vm.envString("RPC_ETHEREUM"), forkBlock);
 		} else {
-			vm.createSelectFork(vm.envString("RPC_ETHEREUM"), vm.envUint("FORK_BLOCK_ETHEREUM"));
+			vm.createSelectFork(vm.envString("RPC_ETHEREUM"));
 		}
 	}
 
