@@ -95,10 +95,7 @@ abstract contract V3SwapRouter is IV3SwapRouter, Routing {
 			amountIn = uint256(-(zeroForOne ? amount1Delta : amount0Delta));
 
 			if (hasMultiplePools) {
-				if (payerCached() != address(this)) {
-					cachePayer(address(this));
-				}
-
+				if (payerCached() != address(this)) cachePayer(address(this));
 				path = path.skipCurrency();
 			} else {
 				amountOut = amountIn;

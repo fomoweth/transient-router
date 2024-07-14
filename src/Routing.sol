@@ -30,11 +30,11 @@ abstract contract Routing is PeripheryPayments {
 	bytes32 private constant SWAP_ACTION_CACHED_SLOT =
 		0x92b8f245bf2fa3dc533d89f752143cbd5bb4b2b6eb819893a9f6a90a5a113d00;
 
-	// bytes32(uint256(keccak256("Routing.amountInCached.slot")) - 1) & ~bytes32(uint256(0xff))
-	bytes32 private constant AMOUNT_IN_CACHED_SLOT = 0x095874a8bbf018eab101d2a903c1a6f6a2bbad44aec6040fdc2de2e98558f400;
-
 	// bytes32(uint256(keccak256("Routing.payerCached.slot")) - 1) & ~bytes32(uint256(0xff))
 	bytes32 private constant PAYER_CACHED_SLOT = 0x1b4d302b7f737861cbf1544ccf4caa8c76b6e98ba00bd04bd021e2793594ea00;
+
+	// bytes32(uint256(keccak256("Routing.amountInCached.slot")) - 1) & ~bytes32(uint256(0xff))
+	bytes32 private constant AMOUNT_IN_CACHED_SLOT = 0x095874a8bbf018eab101d2a903c1a6f6a2bbad44aec6040fdc2de2e98558f400;
 
 	bytes4 internal constant AMOUNT_IN_ZERO_ERROR = 0x40561e0d; // AmountInZero()
 	bytes4 internal constant AMOUNT_IN_MAX_ZERO_ERROR = 0x0ce80233; // AmountInMaxZero()
